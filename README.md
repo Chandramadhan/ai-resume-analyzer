@@ -1,8 +1,8 @@
 <div align="center">
 
-    
+    <a>
       <img src="public/readme/hero.webp" alt="Project Banner">
-    
+    </a>
 
 
   <div>
