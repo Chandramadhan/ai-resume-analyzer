@@ -21,19 +21,22 @@ const Upload = () => {
     const handleAnalyze = async ({ companyName, jobTitle, jobDescription, file }: { companyName: string, jobTitle: string, jobDescription: string, file: File  }) => {
         setIsProcessing(true);
 
-        setStatusText('Uploading the file...');
-        const uploadedFile = await fs.upload([file]);
-        if(!uploadedFile) return setStatusText('Error: Failed to upload file');
+        setStatusText('Processing your resume...');
 
-        setStatusText('Converting to image...');
-        const imageFile = await convertPdfToImage(file);
+        // Start both file upload and PDF conversion in parallel
+        const [uploadedFile, imageFile] = await Promise.all([
+            fs.upload([file]),
+            convertPdfToImage(file)
+        ]);
+
+        if(!uploadedFile) return setStatusText('Error: Failed to upload file');
         if(!imageFile.file) return setStatusText('Error: Failed to convert PDF to image');
 
-        setStatusText('Uploading the image...');
+        setStatusText('Finalizing upload...');
         const uploadedImage = await fs.upload([imageFile.file]);
         if(!uploadedImage) return setStatusText('Error: Failed to upload image');
 
-        setStatusText('Preparing data...');
+        setStatusText('Analyzing with AI...');
         const uuid = generateUUID();
         const data = {
             id: uuid,
@@ -43,8 +46,6 @@ const Upload = () => {
             feedback: '',
         }
         await kv.set(`resume:${uuid}`, JSON.stringify(data));
-
-        setStatusText('Analyzing...');
 
         const feedback = await ai.feedback(
             uploadedFile.path,
@@ -58,8 +59,7 @@ const Upload = () => {
 
         data.feedback = JSON.parse(feedbackText);
         await kv.set(`resume:${uuid}`, JSON.stringify(data));
-        setStatusText('Analysis complete, redirecting...');
-        console.log(data);
+        setStatusText('Complete!');
         navigate(`/resume/${uuid}`);
     }
 
